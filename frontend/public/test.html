@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .error { background-color: #ffcccc; }
+        .success { background-color: #ccffcc; }
+    </style>
+</head>
+<body>
+    <h1>Furever Health API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = 'result ' + (isError ? 'error' : 'success');
+            div.textContent = message;
+            resultsDiv.appendChild(div);
+        }
+        
+        // Detect API URL
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        let apiUrl;
+        
+        if (hostname.includes('github') || hostname.includes('gitpod') || hostname.includes('app')) {
+            const currentUrl = window.location.origin;
+            apiUrl = currentUrl.replace('-5175', '-5000').replace(':5175', ':5000') + '/api';
+        } else {
+            apiUrl = `${protocol}//${hostname}:5000/api`;
+        }
+        
+        addResult('Current URL: ' + window.location.href);
+        addResult('Detected API URL: ' + apiUrl);
+        
+        // Test health check
+        fetch(apiUrl + '/health-check')
+            .then(response => response.json())
+            .then(data => {
+                addResult('✓ Backend health check successful: ' + data.message);
+                
+                // Try registration
+                return fetch(apiUrl + '/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: 'test' + Date.now() + '@example.com',
+                        password: 'password123',
+                        firstName: 'Test',
+                        lastName: 'User'
+                    })
+                });
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error('Registration failed: ' + text);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                addResult('✓ Registration successful! User ID: ' + data.user.id);
+            })
+            .catch(error => {
+                addResult('✗ Error: ' + error.message, true);
+            });
+    </script>
+</body>
+</html>
