@@ -13,7 +13,10 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: true, // Allow all origins in development (change for production)
+  origin: [
+    'http://localhost:5173',
+    'https://frontend-nine-flame-16.vercel.app'
+  ],
   credentials: true,
 }));
 app.use(express.json());
@@ -35,19 +38,29 @@ app.get('/api/health-check', (req, res) => {
   res.json({ status: 'OK', message: 'Furever Health API is running' });
 });
 
-// Initialize database and start server
-const startServer = async () => {
+// Initialize database
+const initDatabase = async () => {
   try {
     await createTables();
     console.log('Database initialized successfully');
-
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT} and accessible from all interfaces`);
-    });
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('Database initialization error:', error);
   }
 };
 
-startServer();
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const startServer = async () => {
+    await initDatabase();
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT} and accessible from all interfaces`);
+    });
+  };
+  startServer();
+} else {
+  // For Vercel serverless
+  initDatabase();
+}
+
+// Export for Vercel
+module.exports = app;
